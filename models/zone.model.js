@@ -1,0 +1,36 @@
+const mongoose = require('mongoose');
+
+const zoneSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: true,
+        trim: true,
+        unique: true
+    },
+    description: {
+        type: String,
+        trim: true
+    },
+    isActive: {
+        type: Boolean,
+        default: true
+    }
+}, {
+    timestamps: true
+});
+
+// Pre-hook para evitar eliminación si la zona tiene dispositivos
+zoneSchema.pre('deleteOne', { document: false, query: true }, async function(next) {
+    const zoneId = this.getFilter()._id;
+    const Device = mongoose.model('Device');
+
+    const deviceCount = await Device.countDocuments({ zoneId: zoneId });
+
+    if (deviceCount > 0) {
+        return next(new Error('No se puede eliminar la zona porque tiene dispositivos asignados'));
+    }
+
+    next();
+});
+
+module.exports = mongoose.model('Zone', zoneSchema);
