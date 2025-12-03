@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://dgaeltfp005_db_user:<db_password>@cluster0.cz0brlu.mongodb.net/?appName=Cluster0';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://dgaeltfp005_db_user:JT0fIyVmLcynH7SX@cluster0.cz0brlu.mongodb.net/?appName=Cluster0';
 
 const connectDB = async () => {
   try {
