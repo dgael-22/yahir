@@ -41,7 +41,7 @@ const { zoneService: service } = require('../services');
 
 /**
  * @swagger
- * api/v1/zones:
+ * /api/v1/zones:
  *   get:
  *     summary: Obtiene todas las zonas
  *     tags: [Zones]
