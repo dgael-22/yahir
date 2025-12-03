@@ -47,7 +47,7 @@ const { userService: service } = require('../services');
 
 /**
  * @swagger
- * /users:
+ * api/v1/users:
  *   get:
  *     summary: Obtiene todos los usuarios
  *     tags: [Users]
