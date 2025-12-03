@@ -1,6 +1,6 @@
 const express = require('express');
-const { deviceService: service } = require('../services');
 const router = express.Router();
+const { deviceService: service } = require('../services');
 
 /**
  * @swagger
@@ -13,7 +13,7 @@ const router = express.Router();
  * @swagger
  * /api/v1/devices:
  *   get:
- *     summary: Obtiene todas las dispositivos
+ *     summary: Obtiene todos los dispositivos
  *     tags: [Devices]
  *     responses:
  *       200:
@@ -30,24 +30,53 @@ const router = express.Router();
  *                     description: ID del dispositivo
  *                   serialNumber:
  *                     type: string
+ *                     description: Número de serie del dispositivo
  *                   model:
  *                     type: string
+ *                     description: Modelo del dispositivo
  *                   installedAt:
  *                     type: string
+ *                     format: date-time
+ *                     description: Fecha de instalación
  *                   status:
  *                     type: string
+ *                     enum: [active, inactive, maintenance]
+ *                     description: Estado del dispositivo
+ *                     example: active
  *                   ownerId:
  *                     type: integer
+ *                     description: ID del propietario
  *                   zoneId:
  *                     type: integer
+ *                     description: ID de la zona
+ *                   createdAt:
+ *                     type: string
+ *                     format: date-time
+ *                     description: Fecha de creación
+ *                   updatedAt:
+ *                     type: string
+ *                     format: date-time
+ *                     description: Fecha de última actualización
  *                   sensors:
  *                     type: array
+ *                     description: Sensores asociados al dispositivo
  *                     items:
  *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                         type:
+ *                           type: string
+ *                         model:
+ *                           type: string
  */
-router.get('/', async (req, res) => {
-    const devices = await service.getAll();
-    res.status(200).json(devices);
+router.get('/', async (req, res, next) => {
+    try {
+        const devices = await service.getAll();
+        res.status(200).json(devices);
+    } catch (error) {
+        next(error);
+    }
 });
 
 /**
@@ -73,31 +102,61 @@ router.get('/', async (req, res) => {
  *               properties:
  *                 id:
  *                   type: integer
+ *                   description: ID del dispositivo
  *                 serialNumber:
  *                   type: string
+ *                   description: Número de serie del dispositivo
  *                 model:
  *                   type: string
+ *                   description: Modelo del dispositivo
  *                 installedAt:
  *                   type: string
+ *                   format: date-time
+ *                   description: Fecha de instalación
  *                 status:
  *                   type: string
+ *                   enum: [active, inactive, maintenance]
+ *                   description: Estado del dispositivo
  *                 ownerId:
  *                   type: integer
+ *                   description: ID del propietario
  *                 zoneId:
  *                   type: integer
+ *                   description: ID de la zona
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *                   description: Fecha de creación
+ *                 updatedAt:
+ *                   type: string
+ *                   format: date-time
+ *                   description: Fecha de última actualización
  *                 sensors:
  *                   type: array
+ *                   description: Sensores asociados al dispositivo
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       type:
+ *                         type: string
+ *                       model:
+ *                         type: string
+ *                       isActive:
+ *                         type: boolean
  *       404:
  *         description: Dispositivo no encontrado
  */
 router.get('/:id', async (req, res, next) => {
-    await service.getById(req.params.id)
-        .then(device => {
-            device
-                ? res.json(device)
-                : res.status(404).json({ message: 'Dispositivo no encontrado' });
-        })
-        .catch(error => next(error));
+    try {
+        const device = await service.getById(req.params.id);
+        device
+            ? res.json(device)
+            : res.status(404).json({ message: 'Dispositivo no encontrado' });
+    } catch (error) {
+        next(error);
+    }
 });
 
 /**
@@ -112,19 +171,39 @@ router.get('/:id', async (req, res, next) => {
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - serialNumber
+ *               - model
+ *               - status
+ *               - ownerId
+ *               - zoneId
  *             properties:
  *               serialNumber:
  *                 type: string
+ *                 description: Número de serie único del dispositivo
+ *                 example: "DEV-2024-001"
  *               model:
  *                 type: string
+ *                 description: Modelo del dispositivo
+ *                 example: "Gateway Pro X"
  *               installedAt:
  *                 type: string
+ *                 format: date-time
+ *                 description: Fecha de instalación
+ *                 example: "2024-01-15T10:30:00Z"
  *               status:
  *                 type: string
+ *                 enum: [active, inactive, maintenance]
+ *                 description: Estado inicial del dispositivo
+ *                 example: active
  *               ownerId:
  *                 type: integer
+ *                 description: ID del propietario
+ *                 example: 1
  *               zoneId:
  *                 type: integer
+ *                 description: ID de la zona donde se instalará
+ *                 example: 3
  *     responses:
  *       201:
  *         description: Dispositivo creado exitosamente
@@ -135,24 +214,36 @@ router.get('/:id', async (req, res, next) => {
  *               properties:
  *                 id:
  *                   type: integer
+ *                   description: ID del dispositivo creado
  *                 serialNumber:
  *                   type: string
  *                 model:
  *                   type: string
  *                 installedAt:
  *                   type: string
+ *                   format: date-time
  *                 status:
  *                   type: string
  *                 ownerId:
  *                   type: integer
  *                 zoneId:
  *                   type: integer
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *                 updatedAt:
+ *                   type: string
+ *                   format: date-time
  *       400:
  *         description: Error en los datos enviados
  */
-router.post('/', async (req, res) => {
-    const newDevice = await service.create(req.body);
-    res.status(201).json(newDevice);
+router.post('/', async (req, res, next) => {
+    try {
+        const newDevice = await service.create(req.body);
+        res.status(201).json(newDevice);
+    } catch (error) {
+        next(error);
+    }
 });
 
 /**
@@ -177,16 +268,24 @@ router.post('/', async (req, res) => {
  *             properties:
  *               serialNumber:
  *                 type: string
+ *                 description: Número de serie único del dispositivo
  *               model:
  *                 type: string
+ *                 description: Modelo del dispositivo
  *               installedAt:
  *                 type: string
+ *                 format: date-time
+ *                 description: Fecha de instalación
  *               status:
  *                 type: string
+ *                 enum: [active, inactive, maintenance]
+ *                 description: Estado del dispositivo
  *               ownerId:
  *                 type: integer
+ *                 description: ID del propietario
  *               zoneId:
  *                 type: integer
+ *                 description: ID de la zona
  *     responses:
  *       200:
  *         description: Dispositivo actualizado exitosamente
@@ -203,20 +302,28 @@ router.post('/', async (req, res) => {
  *                   type: string
  *                 installedAt:
  *                   type: string
+ *                   format: date-time
  *                 status:
  *                   type: string
  *                 ownerId:
  *                   type: integer
  *                 zoneId:
  *                   type: integer
+ *                 updatedAt:
+ *                   type: string
+ *                   format: date-time
  *       404:
  *         description: Dispositivo no encontrado
  */
-router.patch('/:id', async (req, res) => {
-    const updated = await service.update(req.params.id, req.body);
-    updated
-        ? res.json(updated)
-        : res.status(404).json({ message: 'Dispositivo no encontrado' });
+router.patch('/:id', async (req, res, next) => {
+    try {
+        const updated = await service.update(req.params.id, req.body);
+        updated
+            ? res.json(updated)
+            : res.status(404).json({ message: 'Dispositivo no encontrado' });
+    } catch (error) {
+        next(error);
+    }
 });
 
 /**
@@ -245,12 +352,20 @@ router.patch('/:id', async (req, res) => {
  *                   example: "Dispositivo eliminado"
  *       404:
  *         description: Dispositivo no encontrado
+ *       409:
+ *         description: No se puede eliminar porque tiene sensores asociados
  */
 router.delete('/:id', async (req, res, next) => {
-    const deleted = await service.delete(req.params.id);
-    deleted
-        ? res.json({ message: 'Dispositivo eliminado' })
-        : res.status(404).json({ message: 'Dispositivo no encontrado' });
+    try {
+        const deleted = await service.delete(req.params.id);
+        deleted
+            ? res.json({ message: 'Dispositivo eliminado' })
+            : res.status(404).json({ message: 'Dispositivo no encontrado' });
+    } catch (error) {
+        next(error);
+    }
 });
+
+module.exports = router;
 
 module.exports = router;
