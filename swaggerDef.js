@@ -12,7 +12,7 @@ const swaggerDefinition = {
   },
   servers: [
     {
-      url: 'http://localhost:3000',
+      url: 'https://yahir.onrender.com',
       description: 'Servidor de desarrollo',
     },
   ],
