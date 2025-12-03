@@ -107,17 +107,15 @@ deviceSchema.pre('findOneAndUpdate', async function (next) {
 });
 
 // Pre-hook para evitar eliminación si tiene sensores
-deviceSchema.pre('deleteOne', { document: false, query: true }, async function(next) {
+deviceSchema.pre(['deleteOne', 'findOneAndDelete'], { document: false, query: true }, async function(next) {
     try {
         const deviceId = this.getFilter()._id;
         const device = await this.model.findById(deviceId);
-        
         if (device && device.sensors && device.sensors.length > 0) {
             const error = new Error('No se puede eliminar el dispositivo porque tiene sensores asignados');
             error.statusCode = 409;
             return next(error);
         }
-        
         next();
     } catch (error) {
         next(error);
