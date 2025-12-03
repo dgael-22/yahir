@@ -59,7 +59,7 @@ const { userService: service } = require('../services');
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/User'
+ *                 $ref: '#/components/schemas/api/v1/User'
  */
 router.get('/', async (req, res, next) => {
     try {
@@ -89,7 +89,7 @@ router.get('/', async (req, res, next) => {
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/User'
+ *               $ref: '#/components/schemas/api/v1/User'
  *       404:
  *         description: Usuario no encontrado
  */
@@ -106,7 +106,7 @@ router.get('/:id', async (req, res, next) => {
 
 /**
  * @swagger
- * /users:
+ * api/v1/users:
  *   post:
  *     summary: Crea un nuevo usuario
  *     tags: [Users]
@@ -148,7 +148,7 @@ router.post('/', async (req, res, next) => {
 
 /**
  * @swagger
- * /users/{id}:
+ * api/v1/users/{id}:
  *   patch:
  *     summary: Actualiza un usuario por su ID
  *     tags: [Users]
@@ -194,7 +194,7 @@ router.patch('/:id', async (req, res, next) => {
 
 /**
  * @swagger
- * /users/{id}:
+ * api/v1/users/{id}:
  *   delete:
  *     summary: Elimina un usuario por su ID
  *     tags: [Users]
