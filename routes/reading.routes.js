@@ -6,7 +6,41 @@ const { readingService: service } = require('../services');
  * @swagger
  * tags:
  *   name: Readings
- *   description: Endpoints para gestionar lecturas
+ *   description: Endpoints para gestionar lecturas de sensores
+ */
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Reading:
+ *       type: object
+ *       required:
+ *         - sensorId
+ *         - value
+ *       properties:
+ *         id:
+ *           type: string
+ *           description: ID auto-generado de la lectura
+ *         sensorId:
+ *           type: string
+ *           description: ID del sensor que generó la lectura
+ *         value:
+ *           type: number
+ *           format: float
+ *           description: Valor medido por el sensor
+ *         time:
+ *           type: string
+ *           format: date-time
+ *           description: Timestamp de cuando se tomó la medición
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: Fecha de creación del registro
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: Fecha de última actualización
  */
 
 /**
@@ -26,19 +60,30 @@ const { readingService: service } = require('../services');
  *         schema:
  *           type: string
  *           format: date-time
- *         description: Fecha inicial para filtrar
+ *         description: Fecha inicial para filtrar (ISO 8601)
+ *         example: "2024-01-01T00:00:00Z"
  *       - in: query
  *         name: endDate
  *         schema:
  *           type: string
  *           format: date-time
- *         description: Fecha final para filtrar
+ *         description: Fecha final para filtrar (ISO 8601)
+ *         example: "2024-12-31T23:59:59Z"
  *       - in: query
  *         name: limit
  *         schema:
  *           type: integer
+ *           minimum: 1
+ *           maximum: 1000
  *           default: 100
- *         description: Límite de resultados
+ *         description: Límite de resultados (1-1000)
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           minimum: 0
+ *           default: 0
+ *         description: Número de resultados a saltar para paginación
  *     responses:
  *       200:
  *         description: Lista de lecturas
@@ -47,20 +92,7 @@ const { readingService: service } = require('../services');
  *             schema:
  *               type: array
  *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: string
- *                   sensorId:
- *                     type: string
- *                   value:
- *                     type: number
- *                   time:
- *                     type: string
- *                     format: date-time
- *                   createdAt:
- *                     type: string
- *                     format: date-time
+ *                 $ref: '#/components/schemas/Reading'
  */
 router.get('/', async (req, res, next) => {
     try {
@@ -91,20 +123,7 @@ router.get('/', async (req, res, next) => {
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: string
- *                 sensorId:
- *                   type: string
- *                 value:
- *                   type: number
- *                 time:
- *                   type: string
- *                   format: date-time
- *                 createdAt:
- *                   type: string
- *                   format: date-time
+ *               $ref: '#/components/schemas/Reading'
  *       404:
  *         description: Lectura no encontrada
  */
@@ -136,8 +155,29 @@ router.get('/:id', async (req, res, next) => {
  *         name: limit
  *         schema:
  *           type: integer
+ *           minimum: 1
+ *           maximum: 500
  *           default: 50
- *         description: Límite de resultados
+ *         description: Límite de resultados (1-500)
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Fecha inicial para filtrar
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Fecha final para filtrar
+ *       - in: query
+ *         name: order
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: desc
+ *         description: Orden de las lecturas por timestamp
  *     responses:
  *       200:
  *         description: Lista de lecturas del sensor
@@ -146,27 +186,21 @@ router.get('/:id', async (req, res, next) => {
  *             schema:
  *               type: array
  *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: string
- *                   sensorId:
- *                     type: string
- *                   value:
- *                     type: number
- *                   time:
- *                     type: string
- *                     format: date-time
- *                   createdAt:
- *                     type: string
- *                     format: date-time
+ *                 $ref: '#/components/schemas/Reading'
  *       404:
- *         description: Sensor no encontrado
+ *         description: Sensor no encontrado o no tiene lecturas
  */
 router.get('/sensor/:sensorId', async (req, res, next) => {
     try {
         const limit = parseInt(req.query.limit) || 50;
-        const readings = await service.getBySensorId(req.params.sensorId, limit);
+        const filters = {
+            sensorId: req.params.sensorId,
+            startDate: req.query.startDate,
+            endDate: req.query.endDate,
+            limit: limit,
+            order: req.query.order || 'desc'
+        };
+        const readings = await service.getBySensorId(req.params.sensorId, filters);
         res.status(200).json(readings);
     } catch (error) {
         next(error);
@@ -192,37 +226,30 @@ router.get('/sensor/:sensorId', async (req, res, next) => {
  *               sensorId:
  *                 type: string
  *                 description: ID del sensor
+ *                 example: "sensor-12345"
  *               value:
  *                 type: number
+ *                 format: float
  *                 description: Valor de la lectura
+ *                 example: 25.5
  *               time:
  *                 type: string
  *                 format: date-time
  *                 description: Timestamp de la lectura (opcional, usa fecha actual por defecto)
+ *                 example: "2024-01-15T10:30:00Z"
  *     responses:
  *       201:
  *         description: Lectura creada exitosamente
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: string
- *                 sensorId:
- *                   type: string
- *                 value:
- *                   type: number
- *                 time:
- *                   type: string
- *                   format: date-time
- *                 createdAt:
- *                   type: string
- *                   format: date-time
+ *               $ref: '#/components/schemas/Reading'
  *       400:
  *         description: Datos inválidos
  *       404:
  *         description: Sensor no encontrado
+ *       409:
+ *         description: El sensor está inactivo
  */
 router.post('/', async (req, res, next) => {
     try {
@@ -253,44 +280,39 @@ router.post('/', async (req, res, next) => {
  *           schema:
  *             type: object
  *             properties:
- *               sensorId:
- *                 type: string
- *                 description: ID del sensor
  *               value:
  *                 type: number
+ *                 format: float
  *                 description: Nuevo valor de la lectura
+ *                 example: 26.1
  *               time:
  *                 type: string
  *                 format: date-time
  *                 description: Nuevo timestamp de la lectura
+ *                 example: "2024-01-15T10:35:00Z"
  *     responses:
  *       200:
  *         description: Lectura actualizada exitosamente
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: string
- *                 sensorId:
- *                   type: string
- *                 value:
- *                   type: number
- *                 time:
- *                   type: string
- *                   format: date-time
- *                 createdAt:
- *                   type: string
- *                   format: date-time
- *                 updatedAt:
- *                   type: string
- *                   format: date-time
+ *               $ref: '#/components/schemas/Reading'
+ *       400:
+ *         description: Datos inválidos
  *       404:
  *         description: Lectura no encontrada
+ *       422:
+ *         description: No se puede cambiar el sensor asociado a una lectura existente
  */
 router.patch('/:id', async (req, res, next) => {
     try {
+        // No permitir cambiar sensorId en una lectura existente
+        if (req.body.sensorId) {
+            return res.status(422).json({ 
+                message: 'No se puede cambiar el sensor asociado a una lectura existente' 
+            });
+        }
+        
         const updated = await service.update(req.params.id, req.body);
         updated
             ? res.json(updated)
@@ -324,6 +346,9 @@ router.patch('/:id', async (req, res, next) => {
  *                 message:
  *                   type: string
  *                   example: "Lectura eliminada"
+ *                 id:
+ *                   type: string
+ *                   description: ID de la lectura eliminada
  *       404:
  *         description: Lectura no encontrada
  */
@@ -331,7 +356,7 @@ router.delete('/:id', async (req, res, next) => {
     try {
         const deleted = await service.delete(req.params.id);
         deleted
-            ? res.json({ message: 'Lectura eliminada' })
+            ? res.json({ message: 'Lectura eliminada', id: req.params.id })
             : res.status(404).json({ message: 'Lectura no encontrada' });
     } catch (error) {
         next(error);
