@@ -337,7 +337,7 @@ router.patch('/:id', async (req, res, next) => {
  *         name: id
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
  *         description: ID del dispositivo
  *     responses:
  *       200:
