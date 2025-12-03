@@ -40,9 +40,11 @@ const { userService: service } = require('../services');
  *         createdAt:
  *           type: string
  *           format: date-time
+ *           description: Fecha de creación
  *         updatedAt:
  *           type: string
  *           format: date-time
+ *           description: Fecha de última actualización
  */
 
 /**
@@ -59,7 +61,7 @@ const { userService: service } = require('../services');
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/api/v1/User'
+ *                 $ref: '#/components/schemas/User'
  */
 router.get('/', async (req, res, next) => {
     try {
@@ -72,7 +74,7 @@ router.get('/', async (req, res, next) => {
 
 /**
  * @swagger
- * /users/{id}:
+ * /api/v1/users/{id}:
  *   get:
  *     summary: Obtiene un usuario por su ID
  *     tags: [Users]
@@ -89,7 +91,7 @@ router.get('/', async (req, res, next) => {
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/api/v1/User'
+ *               $ref: '#/components/schemas/User'
  *       404:
  *         description: Usuario no encontrado
  */
@@ -106,7 +108,7 @@ router.get('/:id', async (req, res, next) => {
 
 /**
  * @swagger
- * api/v1/users:
+ * /api/v1/users:
  *   post:
  *     summary: Crea un nuevo usuario
  *     tags: [Users]
@@ -124,18 +126,32 @@ router.get('/:id', async (req, res, next) => {
  *             properties:
  *               name:
  *                 type: string
+ *                 description: Nombre del usuario
+ *                 example: "Juan Pérez"
  *               email:
  *                 type: string
+ *                 description: Email único del usuario
+ *                 example: "juan.perez@example.com"
  *               password:
  *                 type: string
+ *                 description: Contraseña del usuario
+ *                 example: "miContraseña123"
  *               role:
  *                 type: string
  *                 enum: [admin, technician, viewer]
+ *                 description: Rol del usuario
+ *                 example: "technician"
  *     responses:
  *       201:
  *         description: Usuario creado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
  *       400:
  *         description: Datos inválidos
+ *       409:
+ *         description: El email ya está registrado
  */
 router.post('/', async (req, res, next) => {
     try {
@@ -148,7 +164,7 @@ router.post('/', async (req, res, next) => {
 
 /**
  * @swagger
- * api/v1/users/{id}:
+ * /api/v1/users/{id}:
  *   patch:
  *     summary: Actualiza un usuario por su ID
  *     tags: [Users]
@@ -168,18 +184,30 @@ router.post('/', async (req, res, next) => {
  *             properties:
  *               name:
  *                 type: string
+ *                 description: Nombre del usuario
  *               email:
  *                 type: string
+ *                 description: Email único del usuario
  *               password:
  *                 type: string
+ *                 description: Nueva contraseña del usuario
  *               role:
  *                 type: string
  *                 enum: [admin, technician, viewer]
+ *                 description: Rol del usuario
  *     responses:
  *       200:
  *         description: Usuario actualizado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Datos inválidos
  *       404:
  *         description: Usuario no encontrado
+ *       409:
+ *         description: El email ya está registrado por otro usuario
  */
 router.patch('/:id', async (req, res, next) => {
     try {
@@ -194,7 +222,7 @@ router.patch('/:id', async (req, res, next) => {
 
 /**
  * @swagger
- * api/v1/users/{id}:
+ * /api/v1/users/{id}:
  *   delete:
  *     summary: Elimina un usuario por su ID
  *     tags: [Users]
@@ -208,6 +236,14 @@ router.patch('/:id', async (req, res, next) => {
  *     responses:
  *       200:
  *         description: Usuario eliminado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Usuario eliminado"
  *       404:
  *         description: Usuario no encontrado
  *       409:
