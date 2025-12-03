@@ -98,9 +98,11 @@ router.get('/', async (req, res, next) => {
 router.get('/:id', async (req, res, next) => {
     try {
         const user = await service.getById(req.params.id);
-        user
-            ? res.json(user)
-            : res.status(404).json({ message: 'Usuario no encontrado' });
+        if (user) {
+            res.status(200).json(user);
+        } else {
+            res.status(404).json({ message: 'Usuario no encontrado' });
+        }
     } catch (error) {
         next(error);
     }
@@ -212,9 +214,11 @@ router.post('/', async (req, res, next) => {
 router.patch('/:id', async (req, res, next) => {
     try {
         const updated = await service.update(req.params.id, req.body);
-        updated
-            ? res.json(updated)
-            : res.status(404).json({ message: 'Usuario no encontrado' });
+        if (updated) {
+            res.status(200).json(updated);
+        } else {
+            res.status(404).json({ message: 'Usuario no encontrado' });
+        }
     } catch (error) {
         next(error);
     }
@@ -251,12 +255,23 @@ router.patch('/:id', async (req, res, next) => {
  */
 router.delete('/:id', async (req, res, next) => {
     try {
-        const deleted = await service.delete(req.params.id);
-        deleted
-            ? res.json({ message: 'Usuario eliminado' })
-            : res.status(404).json({ message: 'Usuario no encontrado' });
+        const result = await service.delete(req.params.id);
+        
+        if (result === null || result === undefined) {
+            res.status(404).json({ message: 'Usuario no encontrado' });
+        } else {
+            res.status(200).json({ 
+                message: 'Usuario eliminado exitosamente',
+                deletedUser: result 
+            });
+        }
     } catch (error) {
-        next(error);
+        // Manejo específico para error 409 u otros
+        if (error.message.includes('dispositivos asignados') || error.code === 'CONFLICT') {
+            res.status(409).json({ message: error.message });
+        } else {
+            next(error);
+        }
     }
 });
 
