@@ -1,6 +1,7 @@
 const User = require('../models/user.model');
 
 class UserService {
+    /*
     async create(data) {
         try {
             const user = new User(data);
@@ -9,7 +10,35 @@ class UserService {
             throw error;
         }
     }
-
+*/
+    async create(data) {
+    try {
+        console.log('🔧 UserService.create - Datos recibidos:', {
+            name: data.name,
+            email: data.email,
+            role: data.role
+        });
+        
+        const user = new User(data);
+        const savedUser = await user.save();
+        
+        console.log('🔧 Usuario guardado en DB:', savedUser._id);
+        
+        // Asegurarnos de devolver sin password
+        const userWithoutPassword = savedUser.toObject();
+        delete userWithoutPassword.password;
+        
+        return userWithoutPassword;
+    } catch (error) {
+        console.error('🔥 ERROR EN UserService.create:', {
+            message: error.message,
+            code: error.code,
+            name: error.name,
+            stack: error.stack // <-- IMPORTANTE
+        });
+        throw error;
+    }
+}
     async getAll() {
         try {
             return await User.find().select('-password');
