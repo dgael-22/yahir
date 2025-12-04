@@ -45,8 +45,6 @@ class UserService {
         try {
             const { _id, __v, createdAt, ...updateData } = changes;
 
-            // NO validar password aquí - el middleware lo hace
-            
             const updated = await User.findByIdAndUpdate(
                 id,
                 updateData,
@@ -62,11 +60,17 @@ class UserService {
 
     async delete(id) {
         try {
-            // Usa findByIdAndDelete para que se ejecuten los middlewares
+            console.log(`🔧 UserService.delete - Eliminando usuario: ${id}`);
+            
+            // Usar findByIdAndDelete para que se ejecuten middlewares si los hay
             const deleted = await User.findByIdAndDelete(id);
             
-            if (!deleted) return null;
+            if (!deleted) {
+                console.log(`🔧 Usuario no encontrado: ${id}`);
+                return null;
+            }
             
+            console.log(`🔧 Usuario eliminado: ${id}`);
             return { 
                 id: deleted._id, 
                 email: deleted.email,
