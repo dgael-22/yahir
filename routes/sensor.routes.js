@@ -1,5 +1,5 @@
 const express = require('express');
-const mongoose = require('mongoose'); // Importar mongoose para validar ObjectId
+const mongoose = require('mongoose'); 
 const router = express.Router();
 const { sensorService: service } = require('../services');
 
