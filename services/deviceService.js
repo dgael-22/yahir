@@ -1,9 +1,8 @@
 async update(id, changes) {
     try {
-        console.log(`🔧 DeviceService.update - ID: ${id}`);
-        console.log(`🔧 Cambios recibidos:`, JSON.stringify(changes, null, 2));
+        console.log(`DeviceService.update - ID: ${id}`);
+        console.log(`Cambios recibidos:`, JSON.stringify(changes, null, 2));
         
-        // 1. Validar que el dispositivo exista
         const existingDevice = await Device.findById(id);
         if (!existingDevice) {
             console.log(`Dispositivo no encontrado: ${id}`);
@@ -12,12 +11,10 @@ async update(id, changes) {
         
         console.log(`Dispositivo encontrado: ${existingDevice.serialNumber}`);
         
-        // 2. Preparar datos para actualización
         const { _id, __v, createdAt, ...updateData } = changes;
         
         console.log(`Datos a actualizar:`, updateData);
         
-        // 3. Limpiar array de sensores si viene
         if (updateData.sensors && Array.isArray(updateData.sensors)) {
             const validSensors = updateData.sensors.filter(sensorId => 
                 sensorId && mongoose.Types.ObjectId.isValid(sensorId) && sensorId !== "string"
@@ -31,7 +28,6 @@ async update(id, changes) {
             console.log(`Sensores válidos:`, validSensors);
         }
         
-        // 4. Si no hay nada que actualizar, devolver el dispositivo actual
         if (Object.keys(updateData).length === 0) {
             console.log(`Sin cambios para aplicar, devolviendo dispositivo actual`);
             return await Device.findById(id)
@@ -40,7 +36,6 @@ async update(id, changes) {
                 .populate('sensors', 'type model');
         }
         
-        // 5. Realizar la actualización
         console.log(`Ejecutando findByIdAndUpdate...`);
         const updated = await Device.findByIdAndUpdate(
             id,
@@ -48,7 +43,7 @@ async update(id, changes) {
             { 
                 new: true, 
                 runValidators: true,
-                context: 'query' // Ayuda con validaciones
+                context: 'query' 
             }
         )
         .populate('ownerId', 'name email role')
