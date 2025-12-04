@@ -1,4 +1,3 @@
-// services/index.js - Versión CORRECTA para MongoDB
 const userService = require('./userService');
 const zoneService = require('./zoneService');
 const deviceService = require('./deviceService');
