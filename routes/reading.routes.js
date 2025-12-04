@@ -144,9 +144,58 @@ router.get('/:id', async (req, res, next) => {
  */
 router.post('/', async (req, res, next) => {
     try {
+        console.log('POST /readings - Body:', req.body);
+        
+        const mongoose = require('mongoose');
+        const { sensorId, value } = req.body;
+        
+        if (!sensorId || value === undefined || value === null) {
+            return res.status(400).json({
+                message: 'Faltan campos requeridos',
+                required: ['sensorId', 'value'],
+                received: { sensorId: !!sensorId, value: value !== undefined }
+            });
+        }
+        
+        if (!mongoose.Types.ObjectId.isValid(sensorId)) {
+            return res.status(400).json({
+                message: 'sensorId inválido',
+                error: 'Debe ser un ObjectId válido de 24 caracteres hexadecimales',
+                value: sensorId
+            });
+        }
+        
+        console.log('Llamando a service.create...');
         const newReading = await service.create(req.body);
+        
+        console.log('Lectura creada exitosamente:', newReading._id);
         res.status(201).json(newReading);
+        
     } catch (error) {
+        console.error('ERROR EN POST /readings:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+        });
+        
+        if (error.name === 'ValidationError') {
+            const errors = {};
+            for (let field in error.errors) {
+                errors[field] = error.errors[field].message;
+            }
+            return res.status(400).json({
+                message: 'Error de validación',
+                errors: errors
+            });
+        }
+        
+        if (error.message && error.message.includes('ObjectId')) {
+            return res.status(400).json({
+                message: 'ID inválido',
+                error: error.message
+            });
+        }
+        
         next(error);
     }
 });
