@@ -6,19 +6,37 @@ class UserService {
             console.log('🔧 UserService.create - Datos recibidos:', {
                 name: data.name,
                 email: data.email,
-                role: data.role
+                role: data.role,
+                passwordLength: data.password ? data.password.length : 0
             });
             
-            const user = new User(data);
+            // Validación manual de password
+            if (!data.password || data.password.length < 6) {
+                throw new Error('La contraseña debe tener al menos 6 caracteres');
+            }
+            
+            // Crear usuario - Mongoose validará automáticamente
+            const user = new User({
+                name: data.name,
+                email: data.email,
+                password: data.password, // Sin encriptar por ahora
+                role: data.role || 'viewer',
+                isActive: data.isActive !== undefined ? data.isActive : true
+            });
+            
+            console.log('🔧 Guardando usuario en MongoDB...');
             const savedUser = await user.save();
             
-            console.log('🔧 Usuario guardado en DB:', savedUser._id);
-            
-            // El modelo YA elimina password con toJSON()
+            console.log('✅ Usuario guardado exitosamente:', savedUser._id);
             return savedUser;
             
         } catch (error) {
-            console.error('🔥 ERROR EN UserService.create:', error);
+            console.error('🔥 ERROR EN UserService.create:', {
+                message: error.message,
+                code: error.code,
+                name: error.name,
+                errors: error.errors
+            });
             throw error;
         }
     }
@@ -62,7 +80,6 @@ class UserService {
         try {
             console.log(`🔧 UserService.delete - Eliminando usuario: ${id}`);
             
-            // Usar findByIdAndDelete para que se ejecuten middlewares si los hay
             const deleted = await User.findByIdAndDelete(id);
             
             if (!deleted) {
