@@ -66,7 +66,7 @@ router.get('/', async (req, res, next) => {
 
 /**
  * @swagger
- * /zones/{id}:
+ * /api/v1/zones/{id}:
  *   get:
  *     summary: Obtiene una zona por su ID
  *     tags: [Zones]
@@ -100,7 +100,7 @@ router.get('/:id', async (req, res, next) => {
 
 /**
  * @swagger
- * /zones:
+ * /api/v1/zones:
  *   post:
  *     summary: Crea una nueva zona
  *     tags: [Zones]
@@ -136,7 +136,7 @@ router.post('/', async (req, res, next) => {
 
 /**
  * @swagger
- * /zones/{id}:
+ * /api/v1/zones/{id}:
  *   patch:
  *     summary: Actualiza una zona por su ID
  *     tags: [Zones]
@@ -179,7 +179,7 @@ router.patch('/:id', async (req, res, next) => {
 
 /**
  * @swagger
- * /zones/{id}:
+ * /api/v1/zones/{id}:
  *   delete:
  *     summary: Elimina una zona por su ID
  *     tags: [Zones]
