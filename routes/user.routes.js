@@ -160,6 +160,16 @@ router.post('/', async (req, res, next) => {
         const newUser = await service.create(req.body);
         res.status(201).json(newUser);
     } catch (error) {
+        console.error('Error en POST /users:', error); 
+        
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({
+                message: 'Error de validación',
+                error: error.message,
+                details: error.errors
+            });
+        }
+        
         next(error);
     }
 });
