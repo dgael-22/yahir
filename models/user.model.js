@@ -64,14 +64,26 @@ userSchema.pre('save', async function(next) {
 */
 
 // Y pon ESTO en su lugar (sin encriptación temporal):
-userSchema.pre('save', function(next) {
-    console.log(`[PRE-SAVE] Usuario: ${this.email}, Contraseña: ${this.password}`);
-    
-    // Solo validar longitud
-    if (this.password && this.password.length < 6) {
-        const error = new Error('La contraseña debe tener al menos 6 caracteres');
-        return next(error);
+userSchema.pre('save', async function(next) {
+    try {
+        console.log(`[PRE-SAVE] Procesando usuario: ${this.email}`);
+        
+        if (!this.isModified('password')) {
+            console.log(`[PRE-SAVE] Contraseña no modificada`);
+            return next();
+        }
+        
+        console.log(`[PRE-SAVE] Encriptando contraseña para: ${this.email}`);
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
+        
+        console.log(`[PRE-SAVE] Contraseña encriptada exitosamente`);
+        next();
+    } catch (error) {
+        console.error(`[PRE-SAVE] Error:`, error);
+        next(error);
     }
+});
 
 // Método para obtener información pública del usuario (sin password)
 userSchema.methods.toJSON = function() {
@@ -86,13 +98,24 @@ userSchema.pre('findOneAndDelete', async function(next) {
     try {
         const userId = this.getQuery()._id;
         
-        console.log(`[PRE-HOOK] Verificando dispositivos del usuario: ${userId}`);
+        console.log(`[PRE-HOOK] Verificando dispositivos para usuario: ${userId}`);
         
-        // Obtener el modelo Device (igual que Sensor hace con Reading)
-        const Device = mongoose.model('Device');
+        // 1. Verificar si el modelo Device existe
+        let Device;
+        try {
+            Device = mongoose.model('Device');
+        } catch (modelError) {
+            // Si Device no está registrado, CONTINUAR sin validación
+            console.log(`[PRE-HOOK] Modelo Device no disponible, saltando validación`);
+            return next();
+        }
         
-        // CORRECTO: En Device es ownerId, NO userId
-        const deviceCount = await Device.countDocuments({ ownerId: userId });
+        // 2. Contar dispositivos
+        const deviceCount = await Device.countDocuments({ 
+            ownerId: new mongoose.Types.ObjectId(userId) 
+        });
+        
+        console.log(`[PRE-HOOK] Usuario ${userId} tiene ${deviceCount} dispositivos`);
         
         if (deviceCount > 0) {
             const error = new Error(`No se puede eliminar el usuario porque tiene ${deviceCount} dispositivos asignados`);
@@ -100,11 +123,18 @@ userSchema.pre('findOneAndDelete', async function(next) {
             return next(error);
         }
         
-        console.log(`[PRE-HOOK] Usuario OK para eliminar`);
+        console.log(`[PRE-HOOK] Usuario ${userId} OK para eliminar`);
         next();
+        
     } catch (error) {
-        console.error(`[PRE-HOOK] Error en usuario:`, error);
-        next(error);
+        console.error(`[PRE-HOOK] Error:`, error);
+        
+        // IMPORTANTE: Si hay error, llamar a next() si existe
+        if (typeof next === 'function') {
+            return next(error);
+        }
+        // Si next no existe, lanzar el error
+        throw error;
     }
 });
 
