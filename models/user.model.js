@@ -38,13 +38,6 @@ const userSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// ==============================================
-// NO HAY MIDDLEWARE PRE-SAVE - ELIMINADO TEMPORALMENTE
-// ==============================================
-
-// ==============================================
-// MÉTODO toJSON (elimina password)
-// ==============================================
 userSchema.methods.toJSON = function() {
     const userObject = this.toObject();
     delete userObject.password;
