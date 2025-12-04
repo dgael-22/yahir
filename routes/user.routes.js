@@ -1,5 +1,5 @@
 const express = require('express');
-const mongoose = require('mongoose'); // Necesario para validar ObjectId
+const mongoose = require('mongoose');
 const router = express.Router();
 const { userService: service } = require('../services');
 
@@ -48,6 +48,9 @@ const { userService: service } = require('../services');
  *           description: Fecha de última actualización
  */
 
+// ==============================================
+// GET ALL USERS
+// ==============================================
 /**
  * @swagger
  * /api/v1/users:
@@ -74,6 +77,9 @@ router.get('/', async (req, res, next) => {
     }
 });
 
+// ==============================================
+// GET USER BY ID
+// ==============================================
 /**
  * @swagger
  * /api/v1/users/{id}:
@@ -111,6 +117,9 @@ router.get('/:id', async (req, res, next) => {
     }
 });
 
+// ==============================================
+// CREATE USER (POST)
+// ==============================================
 /**
  * @swagger
  * /api/v1/users:
@@ -162,22 +171,20 @@ router.post('/', async (req, res, next) => {
     try {
         console.log('📝 POST /users - Body recibido:', req.body);
         
-        // Validación básica antes de llamar al servicio
+        // Validación básica
         const { name, email, password, role } = req.body;
         
         if (!name || !email || !password || !role) {
             return res.status(400).json({
                 message: 'Faltan campos requeridos',
-                required: ['name', 'email', 'password', 'role'],
-                received: { name: !!name, email: !!email, password: !!password, role: !!role }
+                required: ['name', 'email', 'password', 'role']
             });
         }
         
         if (password.length < 6) {
             return res.status(400).json({
                 message: 'La contraseña debe tener al menos 6 caracteres',
-                field: 'password',
-                length: password.length
+                field: 'password'
             });
         }
         
@@ -192,19 +199,16 @@ router.post('/', async (req, res, next) => {
             message: error.message,
             code: error.code,
             name: error.name,
-            stack: error.stack // <-- ESTO ES CRÍTICO
+            stack: error.stack
         });
         
-        // 1. Error de duplicado (email único)
         if (error.code === 11000 || error.name === 'MongoServerError') {
             return res.status(409).json({
                 message: 'El email ya está registrado',
-                error: error.message,
                 field: 'email'
             });
         }
         
-        // 2. Error de validación de Mongoose
         if (error.name === 'ValidationError') {
             const errors = {};
             for (let field in error.errors) {
@@ -216,19 +220,13 @@ router.post('/', async (req, res, next) => {
             });
         }
         
-        // 3. Error de bcrypt (contraseña)
-        if (error.message && error.message.includes('bcrypt')) {
-            return res.status(500).json({
-                message: 'Error al procesar la contraseña',
-                error: 'Error interno de encriptación'
-            });
-        }
-        
-        // 4. Pasar al siguiente middleware
         next(error);
     }
 });
 
+// ==============================================
+// UPDATE USER (PATCH)
+// ==============================================
 /**
  * @swagger
  * /api/v1/users/{id}:
@@ -290,7 +288,6 @@ router.patch('/:id', async (req, res, next) => {
     } catch (error) {
         console.error(`❌ ERROR EN PATCH /users/${req.params.id}:`, error);
         
-        // Manejar error de duplicado
         if (error.code === 11000 || error.name === 'MongoServerError') {
             return res.status(409).json({
                 message: 'El email ya está registrado por otro usuario',
@@ -298,7 +295,6 @@ router.patch('/:id', async (req, res, next) => {
             });
         }
         
-        // Manejar error de validación
         if (error.name === 'ValidationError') {
             return res.status(400).json({
                 message: 'Error de validación',
@@ -311,6 +307,9 @@ router.patch('/:id', async (req, res, next) => {
     }
 });
 
+// ==============================================
+// DELETE USER
+// ==============================================
 /**
  * @swagger
  * /api/v1/users/{id}:
@@ -345,11 +344,10 @@ router.delete('/:id', async (req, res, next) => {
         const userId = req.params.id;
         console.log(`🗑️ DELETE /users/${userId} - Iniciando`);
         
-        // Validar ObjectId (igual que Sensor)
         if (!mongoose.Types.ObjectId.isValid(userId)) {
             return res.status(400).json({
                 message: 'ID inválido',
-                error: 'El ID proporcionado no es un ObjectId válido de MongoDB',
+                error: 'El ID no es un ObjectId válido de MongoDB',
                 id: userId
             });
         }
@@ -374,12 +372,11 @@ router.delete('/:id', async (req, res, next) => {
     } catch (error) {
         console.error(`❌ ERROR EN DELETE /users/${req.params.id}:`, {
             message: error.message,
-            stack: error.stack, // <-- IMPORTANTE PARA DIAGNÓSTICO
+            stack: error.stack,
             code: error.code,
             name: error.name
         });
         
-        // 1. Error de dispositivos asociados
         if (error.message && error.message.includes('dispositivos asignados')) {
             return res.status(409).json({
                 message: error.message,
@@ -387,33 +384,21 @@ router.delete('/:id', async (req, res, next) => {
             });
         }
         
-        // 2. Error de CastError (ObjectId inválido)
         if (error.name === 'CastError') {
             return res.status(400).json({
                 message: 'ID inválido',
-                error: 'Formato de ID incorrecto para MongoDB ObjectId',
+                error: 'Formato de ID incorrecto',
                 id: req.params.id
             });
         }
         
-        // 3. Error de validación
         if (error.name === 'ValidationError') {
             return res.status(400).json({
                 message: 'Error de validación',
-                error: error.message,
-                details: error.errors
+                error: error.message
             });
         }
         
-        // 4. Error de referencia (si Device no existe)
-        if (error.message && error.message.includes('Device')) {
-            return res.status(500).json({
-                message: 'Error de configuración del sistema',
-                error: 'Modelo Device no disponible'
-            });
-        }
-        
-        // 5. Pasar al siguiente middleware
         next(error);
     }
 });
