@@ -12,9 +12,9 @@ const connectDB = require('./config/db');
 const { logErrors, errorHandler } = require('./middlewares/errorHandler');
 
 // Import routes
+const deviceRoutes = require('./routes/device.routes');
 const userRoutes = require('./routes/user.routes');
 const zoneRoutes = require('./routes/zone.routes');
-const deviceRoutes = require('./routes/device.routes');
 const sensorRoutes = require('./routes/sensor.routes');
 const readingRoutes = require('./routes/reading.routes');
 
