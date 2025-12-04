@@ -6,6 +6,7 @@ class ZoneService {
             const zone = new Zone(data);
             return await zone.save();
         } catch (error) {
+            console.error('🔥 ERROR EN ZoneService.create:', error);
             throw error;
         }
     }
@@ -14,6 +15,7 @@ class ZoneService {
         try {
             return await Zone.find();
         } catch (error) {
+            console.error('🔥 ERROR EN ZoneService.getAll:', error);
             throw error;
         }
     }
@@ -22,6 +24,7 @@ class ZoneService {
         try {
             return await Zone.findById(id);
         } catch (error) {
+            console.error('🔥 ERROR EN ZoneService.getById:', error);
             throw error;
         }
     }
@@ -38,18 +41,31 @@ class ZoneService {
 
             return updated;
         } catch (error) {
+            console.error('🔥 ERROR EN ZoneService.update:', error);
             throw error;
         }
     }
 
     async delete(id) {
         try {
-            const zone = await Zone.findById(id);
-            if (!zone) return null;
-
-            await Zone.deleteOne({ _id: id });
-            return { id: zone._id, name: zone.name };
+            console.log(`🔧 ZoneService.delete - Eliminando zona: ${id}`);
+            
+            // IMPORTANTE: Usar findByIdAndDelete (no deleteOne)
+            const deleted = await Zone.findByIdAndDelete(id);
+            
+            if (!deleted) {
+                console.log(`🔧 Zona no encontrada: ${id}`);
+                return null;
+            }
+            
+            console.log(`🔧 Zona eliminada: ${id} - ${deleted.name}`);
+            return { 
+                id: deleted._id, 
+                name: deleted.name,
+                description: deleted.description 
+            };
         } catch (error) {
+            console.error('🔥 ERROR EN ZoneService.delete:', error);
             throw error;
         }
     }
@@ -58,6 +74,7 @@ class ZoneService {
         try {
             return await Zone.find({ isActive: true });
         } catch (error) {
+            console.error('🔥 ERROR EN ZoneService.getActiveZones:', error);
             throw error;
         }
     }
