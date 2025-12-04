@@ -19,18 +19,22 @@ const zoneSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Pre-hook para evitar eliminación si la zona tiene dispositivos
+// ==============================================
+// MIDDLEWARE DE ELIMINACIÓN - COMENTADO TEMPORALMENTE
+// ==============================================
+/*
 zoneSchema.pre(['deleteOne', 'findOneAndDelete'], { document: false, query: true }, async function(next) {
     const zoneId = this.getFilter()._id;
     const Device = mongoose.model('Device');
- 
+
     const deviceCount = await Device.countDocuments({ zoneId: zoneId });
- 
+
     if (deviceCount > 0) {
         return next(new Error('No se puede eliminar la zona porque tiene dispositivos asignados'));
     }
- 
+
     next();
 });
+*/
 
 module.exports = mongoose.model('Zone', zoneSchema);
