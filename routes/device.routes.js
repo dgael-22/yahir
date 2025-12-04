@@ -90,7 +90,7 @@ router.get('/', async (req, res, next) => {
  *         name: id
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
  *         description: ID del dispositivo
  *     responses:
  *       200:
@@ -257,7 +257,7 @@ router.post('/', async (req, res, next) => {
  *         name: id
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
  *         description: ID del dispositivo
  *     requestBody:
  *       required: true
