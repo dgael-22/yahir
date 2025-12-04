@@ -48,9 +48,6 @@ const { userService: service } = require('../services');
  *           description: Fecha de última actualización
  */
 
-// ==============================================
-// GET ALL USERS
-// ==============================================
 /**
  * @swagger
  * /api/v1/users:
@@ -72,14 +69,12 @@ router.get('/', async (req, res, next) => {
         const users = await service.getAll();
         res.status(200).json(users);
     } catch (error) {
-        console.error('❌ Error en GET /users:', error);
+        console.error('Error en GET /users:', error);
         next(error);
     }
 });
 
-// ==============================================
-// GET USER BY ID
-// ==============================================
+
 /**
  * @swagger
  * /api/v1/users/{id}:
@@ -112,14 +107,11 @@ router.get('/:id', async (req, res, next) => {
             res.status(404).json({ message: 'Usuario no encontrado' });
         }
     } catch (error) {
-        console.error(`❌ Error en GET /users/${req.params.id}:`, error);
+        console.error(`Error en GET /users/${req.params.id}:`, error);
         next(error);
     }
 });
 
-// ==============================================
-// CREATE USER (POST)
-// ==============================================
 /**
  * @swagger
  * /api/v1/users:
@@ -169,7 +161,7 @@ router.get('/:id', async (req, res, next) => {
  */
 router.post('/', async (req, res, next) => {
     try {
-        console.log('📝 POST /users - Body recibido:', req.body);
+        console.log('POST /users - Body recibido:', req.body);
         
         // Validación básica
         const { name, email, password, role } = req.body;
@@ -188,14 +180,14 @@ router.post('/', async (req, res, next) => {
             });
         }
         
-        console.log('📝 Llamando a service.create()...');
+        console.log('Llamando a service.create()...');
         const newUser = await service.create(req.body);
         
-        console.log('✅ Usuario creado exitosamente:', newUser._id);
+        console.log('Usuario creado exitosamente:', newUser._id);
         res.status(201).json(newUser);
         
     } catch (error) {
-        console.error('❌ ERROR EN POST /users:', {
+        console.error('ERROR EN POST /users:', {
             message: error.message,
             code: error.code,
             name: error.name,
@@ -224,9 +216,7 @@ router.post('/', async (req, res, next) => {
     }
 });
 
-// ==============================================
-// UPDATE USER (PATCH)
-// ==============================================
+
 /**
  * @swagger
  * /api/v1/users/{id}:
@@ -276,7 +266,7 @@ router.post('/', async (req, res, next) => {
  */
 router.patch('/:id', async (req, res, next) => {
     try {
-        console.log(`📝 PATCH /users/${req.params.id} - Datos:`, req.body);
+        console.log(`PATCH /users/${req.params.id} - Datos:`, req.body);
         
         const updated = await service.update(req.params.id, req.body);
         
@@ -286,7 +276,7 @@ router.patch('/:id', async (req, res, next) => {
             res.status(404).json({ message: 'Usuario no encontrado' });
         }
     } catch (error) {
-        console.error(`❌ ERROR EN PATCH /users/${req.params.id}:`, error);
+        console.error(`ERROR EN PATCH /users/${req.params.id}:`, error);
         
         if (error.code === 11000 || error.name === 'MongoServerError') {
             return res.status(409).json({
@@ -307,9 +297,7 @@ router.patch('/:id', async (req, res, next) => {
     }
 });
 
-// ==============================================
-// DELETE USER
-// ==============================================
+
 /**
  * @swagger
  * /api/v1/users/{id}:
@@ -342,7 +330,7 @@ router.patch('/:id', async (req, res, next) => {
 router.delete('/:id', async (req, res, next) => {
     try {
         const userId = req.params.id;
-        console.log(`🗑️ DELETE /users/${userId} - Iniciando`);
+        console.log(`DELETE /users/${userId} - Iniciando`);
         
         if (!mongoose.Types.ObjectId.isValid(userId)) {
             return res.status(400).json({
@@ -352,25 +340,25 @@ router.delete('/:id', async (req, res, next) => {
             });
         }
         
-        console.log(`🗑️ Llamando a service.delete("${userId}")`);
+        console.log(`Llamando a service.delete("${userId}")`);
         const result = await service.delete(userId);
         
         if (!result) {
-            console.log(`❌ Usuario no encontrado: ${userId}`);
+            console.log(`Usuario no encontrado: ${userId}`);
             return res.status(404).json({
                 message: 'Usuario no encontrado',
                 id: userId
             });
         }
         
-        console.log(`✅ Usuario eliminado: ${userId}`);
+        console.log(`Usuario eliminado: ${userId}`);
         return res.status(200).json({
             message: 'Usuario eliminado exitosamente',
             deletedUser: result
         });
         
     } catch (error) {
-        console.error(`❌ ERROR EN DELETE /users/${req.params.id}:`, {
+        console.error(`ERROR EN DELETE /users/${req.params.id}:`, {
             message: error.message,
             stack: error.stack,
             code: error.code,
