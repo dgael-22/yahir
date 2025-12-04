@@ -162,6 +162,14 @@ router.post('/', async (req, res, next) => {
     } catch (error) {
         console.error('Error en POST /users:', error); 
         
+        if (error.code === 11000 || error.name === 'MongoServerError') {
+            return res.status(409).json({
+                message: 'El email ya está registrado',
+                error: error.message
+            });
+        }
+        
+        // Manejar error de validación
         if (error.name === 'ValidationError') {
             return res.status(400).json({
                 message: 'Error de validación',
