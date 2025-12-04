@@ -47,43 +47,8 @@ const { readingService: service } = require('../services');
  * @swagger
  * /api/v1/readings:
  *   get:
- *     summary: Obtiene todas las lecturas con filtros opcionales
+ *     summary: Obtiene todas las lecturas
  *     tags: [Readings]
- *     parameters:
- *       - in: query
- *         name: sensorId
- *         schema:
- *           type: string
- *         description: Filtrar por ID de sensor
- *       - in: query
- *         name: startDate
- *         schema:
- *           type: string
- *           format: date-time
- *         description: Fecha inicial para filtrar (ISO 8601)
- *         example: "2024-01-01T00:00:00Z"
- *       - in: query
- *         name: endDate
- *         schema:
- *           type: string
- *           format: date-time
- *         description: Fecha final para filtrar (ISO 8601)
- *         example: "2024-12-31T23:59:59Z"
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           minimum: 1
- *           maximum: 1000
- *           default: 100
- *         description: Límite de resultados (1-1000)
- *       - in: query
- *         name: offset
- *         schema:
- *           type: integer
- *           minimum: 0
- *           default: 0
- *         description: Número de resultados a saltar para paginación
  *     responses:
  *       200:
  *         description: Lista de lecturas
@@ -96,8 +61,7 @@ const { readingService: service } = require('../services');
  */
 router.get('/', async (req, res, next) => {
     try {
-        const filters = req.query;
-        const readings = await service.getAll(filters);
+        const readings = await service.getAll();
         res.status(200).json(readings);
     } catch (error) {
         next(error);
@@ -119,7 +83,7 @@ router.get('/', async (req, res, next) => {
  *         description: ID de la lectura
  *     responses:
  *       200:
- *         description: Lectura encontrada
+ *         description: Lectura encontrado
  *         content:
  *           application/json:
  *             schema:
@@ -133,75 +97,6 @@ router.get('/:id', async (req, res, next) => {
         reading
             ? res.json(reading)
             : res.status(404).json({ message: 'Lectura no encontrada' });
-    } catch (error) {
-        next(error);
-    }
-});
-
-/**
- * @swagger
- * /api/v1/readings/sensor/{sensorId}:
- *   get:
- *     summary: Obtiene lecturas por ID de sensor
- *     tags: [Readings]
- *     parameters:
- *       - in: path
- *         name: sensorId
- *         required: true
- *         schema:
- *           type: string
- *         description: ID del sensor
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           minimum: 1
- *           maximum: 500
- *           default: 50
- *         description: Límite de resultados (1-500)
- *       - in: query
- *         name: startDate
- *         schema:
- *           type: string
- *           format: date-time
- *         description: Fecha inicial para filtrar
- *       - in: query
- *         name: endDate
- *         schema:
- *           type: string
- *           format: date-time
- *         description: Fecha final para filtrar
- *       - in: query
- *         name: order
- *         schema:
- *           type: string
- *           enum: [asc, desc]
- *           default: desc
- *         description: Orden de las lecturas por timestamp
- *     responses:
- *       200:
- *         description: Lista de lecturas del sensor
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Reading'
- *       404:
- *         description: Sensor no encontrado o no tiene lecturas
- */
-router.get('/sensor/:sensorId', async (req, res, next) => {
-    try {
-        const limit = parseInt(req.query.limit) || 50;
-        const filters = {
-            sensorId: req.params.sensorId,
-            startDate: req.query.startDate,
-            endDate: req.query.endDate,
-            limit: limit,
-            order: req.query.order || 'desc'
-        };
-        const readings = await service.getBySensorId(req.params.sensorId, filters);
-        res.status(200).json(readings);
     } catch (error) {
         next(error);
     }
@@ -226,7 +121,7 @@ router.get('/sensor/:sensorId', async (req, res, next) => {
  *               sensorId:
  *                 type: string
  *                 description: ID del sensor
- *                 example: "sensor-12345"
+ *                 example: "507f1f77bcf86cd799439011"
  *               value:
  *                 type: number
  *                 format: float
@@ -246,10 +141,6 @@ router.get('/sensor/:sensorId', async (req, res, next) => {
  *               $ref: '#/components/schemas/Reading'
  *       400:
  *         description: Datos inválidos
- *       404:
- *         description: Sensor no encontrado
- *       409:
- *         description: El sensor está inactivo
  */
 router.post('/', async (req, res, next) => {
     try {
