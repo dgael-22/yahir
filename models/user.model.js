@@ -39,45 +39,23 @@ const userSchema = new mongoose.Schema({
     timestamps: true
 });
 
-/*
-// Middleware para encriptar la contraseña antes de guardar
-userSchema.pre('save', async function(next) {
+// ==============================================
+// MIDDLEWARE DE SAVE - VERSIÓN SIMPLIFICADA
+// ==============================================
+userSchema.pre('save', function(next) {
     try {
         console.log(`[PRE-SAVE] Procesando usuario: ${this.email}`);
         
-        if (!this.isModified('password')) {
-            console.log(`[PRE-SAVE] Contraseña no modificada`);
-            return next();
+        // Solo validar longitud mínima por ahora
+        if (this.password && this.password.length < 6) {
+            const error = new Error('La contraseña debe tener al menos 6 caracteres');
+            return next(error);
         }
         
-        console.log(`[PRE-SAVE] Encriptando contraseña para: ${this.email}`);
-        const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password, salt);
+        // TEMPORAL: No encriptar por ahora
+        // this.password = 'plain_' + this.password;
         
-        console.log(`[PRE-SAVE] Contraseña encriptada exitosamente`);
-        next();
-    } catch (error) {
-        console.error(`[PRE-SAVE] Error al encriptar contraseña:`, error);
-        next(error);
-    }
-});
-*/
-
-// Y pon ESTO en su lugar (sin encriptación temporal):
-userSchema.pre('save', async function(next) {
-    try {
-        console.log(`[PRE-SAVE] Procesando usuario: ${this.email}`);
-        
-        if (!this.isModified('password')) {
-            console.log(`[PRE-SAVE] Contraseña no modificada`);
-            return next();
-        }
-        
-        console.log(`[PRE-SAVE] Encriptando contraseña para: ${this.email}`);
-        const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password, salt);
-        
-        console.log(`[PRE-SAVE] Contraseña encriptada exitosamente`);
+        console.log(`[PRE-SAVE] Usuario ${this.email} listo para guardar`);
         next();
     } catch (error) {
         console.error(`[PRE-SAVE] Error:`, error);
@@ -85,7 +63,9 @@ userSchema.pre('save', async function(next) {
     }
 });
 
-// Método para obtener información pública del usuario (sin password)
+// ==============================================
+// MÉTODO toJSON (elimina password)
+// ==============================================
 userSchema.methods.toJSON = function() {
     const userObject = this.toObject();
     delete userObject.password;
@@ -93,27 +73,46 @@ userSchema.methods.toJSON = function() {
     return userObject;
 };
 
-// Pre-hook para evitar eliminación si el usuario tiene dispositivos
-userSchema.pre('findOneAndDelete', async function(next) {
+// ==============================================
+// MIDDLEWARE DE ELIMINACIÓN - COMENTADO TEMPORALMENTE
+// ==============================================
+/*
+userSchema.pre('findOneAndDelete', { document: false, query: true }, async function(next) {
     try {
-        const userId = this.getQuery()._id;
+        console.log('[PRE-HOOK] Middleware de eliminación de usuario');
         
-        console.log(`[PRE-HOOK] Verificando dispositivos para usuario: ${userId}`);
+        // Verificar si 'next' es una función
+        if (typeof next !== 'function') {
+            console.error('[PRE-HOOK] Error: next no es una función');
+            return;
+        }
         
-        // 1. Verificar si el modelo Device existe
-        let Device;
-        try {
-            Device = mongoose.model('Device');
-        } catch (modelError) {
-            // Si Device no está registrado, CONTINUAR sin validación
-            console.log(`[PRE-HOOK] Modelo Device no disponible, saltando validación`);
+        const userId = this.getFilter ? this.getFilter()._id : this.getQuery()._id;
+        
+        if (!userId) {
+            console.log('[PRE-HOOK] No se encontró userId, continuando');
             return next();
         }
         
-        // 2. Contar dispositivos
-        const deviceCount = await Device.countDocuments({ 
-            ownerId: new mongoose.Types.ObjectId(userId) 
-        });
+        console.log(`[PRE-HOOK] Verificando dispositivos para usuario: ${userId}`);
+        
+        // Verificar si Device está disponible
+        let DeviceModel;
+        try {
+            DeviceModel = mongoose.model('Device');
+        } catch (err) {
+            console.log('[PRE-HOOK] Modelo Device no disponible, saltando validación');
+            return next();
+        }
+        
+        // Validar ObjectId
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            console.log(`[PRE-HOOK] userId no es válido: ${userId}`);
+            return next();
+        }
+        
+        const objectId = new mongoose.Types.ObjectId(userId);
+        const deviceCount = await DeviceModel.countDocuments({ ownerId: objectId });
         
         console.log(`[PRE-HOOK] Usuario ${userId} tiene ${deviceCount} dispositivos`);
         
@@ -127,15 +126,15 @@ userSchema.pre('findOneAndDelete', async function(next) {
         next();
         
     } catch (error) {
-        console.error(`[PRE-HOOK] Error:`, error);
+        console.error('[PRE-HOOK] Error en middleware:', error);
         
-        // IMPORTANTE: Si hay error, llamar a next() si existe
         if (typeof next === 'function') {
             return next(error);
         }
-        // Si next no existe, lanzar el error
-        throw error;
+        
+        console.error('[PRE-HOOK] next no disponible, continuando sin error');
     }
 });
+*/
 
 module.exports = mongoose.model('User', userSchema);
