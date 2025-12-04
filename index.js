@@ -82,6 +82,18 @@ app.use('/api/v1/devices', deviceRoutes);
 app.use('/api/v1/sensors', sensorRoutes);
 app.use('/api/v1/readings', readingRoutes);
 
+// Agrega esto ANTES del middleware global de error:
+app.use((req, res, next) => {
+    console.log('📥 Request recibida:', {
+        method: req.method,
+        path: req.path,
+        body: req.body,
+        query: req.query,
+        params: req.params
+    });
+    next();
+});
+
 // 404 Handler
 app.use((req, res, next) => {
     res.status(404).json({
