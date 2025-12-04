@@ -8,8 +8,7 @@ const readingSchema = new mongoose.Schema({
     },
     time: {
         type: Date,
-        default: Date.now,
-        required: true
+        default: Date.now
     },
     value: {
         type: Number,
@@ -19,7 +18,7 @@ const readingSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Índice compuesto para búsquedas eficientes
+// Solo índice, NO middleware
 readingSchema.index({ sensorId: 1, time: -1 });
 
 module.exports = mongoose.model('Reading', readingSchema);
