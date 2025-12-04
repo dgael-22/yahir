@@ -40,16 +40,18 @@ const deviceSchema = new mongoose.Schema({
     timestamps: true
 });
 
+// ==============================================
+// MIDDLEWARES - COMENTADOS TEMPORALMENTE
+// ==============================================
+/*
 // Función de validación de referencias
 async function validateReferences(doc, next) {
     try {
-        // Verificar si los modelos existen
         let User, Zone;
         try {
             User = mongoose.model('User');
             Zone = mongoose.model('Zone');
         } catch (error) {
-            // Si los modelos no están registrados, continuar sin validación
             return next();
         }
 
@@ -87,7 +89,6 @@ deviceSchema.pre('findOneAndUpdate', async function (next) {
     try {
         const update = this.getUpdate();
         
-        // Obtener el documento actual si existe
         let currentDoc = null;
         if (this._conditions._id) {
             currentDoc = await this.model.findById(this._conditions._id);
@@ -121,5 +122,6 @@ deviceSchema.pre(['deleteOne', 'findOneAndDelete'], { document: false, query: tr
         next(error);
     }
 });
+*/
 
 module.exports = mongoose.model('Device', deviceSchema);
