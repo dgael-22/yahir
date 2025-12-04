@@ -1,48 +1,33 @@
 const User = require('../models/user.model');
 
 class UserService {
-    /*
     async create(data) {
         try {
+            console.log('🔧 UserService.create - Datos recibidos:', {
+                name: data.name,
+                email: data.email,
+                role: data.role
+            });
+            
             const user = new User(data);
-            return await user.save();
+            const savedUser = await user.save();
+            
+            console.log('🔧 Usuario guardado en DB:', savedUser._id);
+            
+            // El modelo YA elimina password con toJSON()
+            return savedUser;
+            
         } catch (error) {
+            console.error('🔥 ERROR EN UserService.create:', error);
             throw error;
         }
     }
-*/
-    async create(data) {
-    try {
-        console.log('🔧 UserService.create - Datos recibidos:', {
-            name: data.name,
-            email: data.email,
-            role: data.role
-        });
-        
-        const user = new User(data);
-        const savedUser = await user.save();
-        
-        console.log('🔧 Usuario guardado en DB:', savedUser._id);
-        
-        // Asegurarnos de devolver sin password
-        const userWithoutPassword = savedUser.toObject();
-        delete userWithoutPassword.password;
-        
-        return userWithoutPassword;
-    } catch (error) {
-        console.error('🔥 ERROR EN UserService.create:', {
-            message: error.message,
-            code: error.code,
-            name: error.name,
-            stack: error.stack // <-- IMPORTANTE
-        });
-        throw error;
-    }
-}
+
     async getAll() {
         try {
             return await User.find().select('-password');
         } catch (error) {
+            console.error('🔥 ERROR EN UserService.getAll:', error);
             throw error;
         }
     }
@@ -51,19 +36,17 @@ class UserService {
         try {
             return await User.findById(id).select('-password');
         } catch (error) {
+            console.error('🔥 ERROR EN UserService.getById:', error);
             throw error;
         }
     }
 
     async update(id, changes) {
         try {
-            // Excluir campos que no deben actualizarse directamente
             const { _id, __v, createdAt, ...updateData } = changes;
 
-            if (updateData.password && updateData.password.length < 6) {
-                throw new Error('La contraseña debe tener al menos 6 caracteres');
-            }
-
+            // NO validar password aquí - el middleware lo hace
+            
             const updated = await User.findByIdAndUpdate(
                 id,
                 updateData,
@@ -72,18 +55,25 @@ class UserService {
 
             return updated;
         } catch (error) {
+            console.error('🔥 ERROR EN UserService.update:', error);
             throw error;
         }
     }
 
     async delete(id) {
         try {
-            const user = await User.findById(id);
-            if (!user) return null;
-
-            await User.deleteOne({ _id: id });
-            return { id: user._id, email: user.email };
+            // Usa findByIdAndDelete para que se ejecuten los middlewares
+            const deleted = await User.findByIdAndDelete(id);
+            
+            if (!deleted) return null;
+            
+            return { 
+                id: deleted._id, 
+                email: deleted.email,
+                name: deleted.name 
+            };
         } catch (error) {
+            console.error('🔥 ERROR EN UserService.delete:', error);
             throw error;
         }
     }
@@ -92,6 +82,7 @@ class UserService {
         try {
             return await User.findOne({ email });
         } catch (error) {
+            console.error('🔥 ERROR EN UserService.findByEmail:', error);
             throw error;
         }
     }
