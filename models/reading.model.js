@@ -18,7 +18,6 @@ const readingSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Solo índice, NO middleware
 readingSchema.index({ sensorId: 1, time: -1 });
 
 module.exports = mongoose.model('Reading', readingSchema);
