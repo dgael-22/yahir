@@ -14,7 +14,6 @@ class ReadingService {
             const savedReading = await reading.save();
             console.log('Reading creado:', savedReading._id);
             
-            // Populate después de guardar
             const populated = await Reading.findById(savedReading._id)
                 .populate('sensorId', 'type unit model');
             
