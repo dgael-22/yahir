@@ -6,46 +6,27 @@ class ReadingService {
             const reading = new Reading(data);
             return await reading.save();
         } catch (error) {
+            console.error('Error en ReadingService.create:', error);
             throw error;
         }
     }
 
-    async getAll(filters = {}) {
+    async getAll() {
         try {
-            const { sensorId, startDate, endDate, limit = 100, ...otherFilters } = filters;
-            const query = { ...otherFilters };
-
-            if (sensorId) query.sensorId = sensorId;
-            if (startDate || endDate) {
-                query.time = {};
-                if (startDate) query.time.$gte = new Date(startDate);
-                if (endDate) query.time.$lte = new Date(endDate);
-            }
-
-            return await Reading.find(query)
+            return await Reading.find()
                 .sort({ time: -1 })
-                .limit(parseInt(limit))
-                .populate('sensorId', 'type unit model');
+                .populate('sensorId', 'type unit model location isActive');
         } catch (error) {
+            console.error('Error en ReadingService.getAll:', error);
             throw error;
         }
     }
 
     async getById(id) {
         try {
-            return await Reading.findById(id).populate('sensorId', 'type unit model');
+            return await Reading.findById(id).populate('sensorId', 'type unit model location isActive');
         } catch (error) {
-            throw error;
-        }
-    }
-
-    async getBySensorId(sensorId, limit = 50) {
-        try {
-            return await Reading.find({ sensorId })
-                .sort({ time: -1 })
-                .limit(limit)
-                .populate('sensorId', 'type unit model');
-        } catch (error) {
+            console.error('Error en ReadingService.getById:', error);
             throw error;
         }
     }
@@ -58,10 +39,11 @@ class ReadingService {
                 id,
                 updateData,
                 { new: true, runValidators: true }
-            ).populate('sensorId', 'type unit model');
+            ).populate('sensorId', 'type unit model location isActive');
 
             return updated;
         } catch (error) {
+            console.error('Error en ReadingService.update:', error);
             throw error;
         }
     }
@@ -74,45 +56,7 @@ class ReadingService {
             await Reading.deleteOne({ _id: id });
             return { id: reading._id, sensorId: reading.sensorId, time: reading.time };
         } catch (error) {
-            throw error;
-        }
-    }
-
-    async getLatestBySensor(sensorId) {
-        try {
-            return await Reading.findOne({ sensorId })
-                .sort({ time: -1 })
-                .populate('sensorId', 'type unit model');
-        } catch (error) {
-            throw error;
-        }
-    }
-
-    async getStatsBySensor(sensorId, startDate, endDate) {
-        try {
-            const match = { sensorId };
-            if (startDate || endDate) {
-                match.time = {};
-                if (startDate) match.time.$gte = new Date(startDate);
-                if (endDate) match.time.$lte = new Date(endDate);
-            }
-
-            const stats = await Reading.aggregate([
-                { $match: match },
-                {
-                    $group: {
-                        _id: '$sensorId',
-                        count: { $sum: 1 },
-                        avgValue: { $avg: '$value' },
-                        minValue: { $min: '$value' },
-                        maxValue: { $max: '$value' },
-                        latestTime: { $max: '$time' }
-                    }
-                }
-            ]);
-
-            return stats[0] || null;
-        } catch (error) {
+            console.error('Error en ReadingService.delete:', error);
             throw error;
         }
     }
