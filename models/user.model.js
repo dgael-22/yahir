@@ -39,6 +39,7 @@ const userSchema = new mongoose.Schema({
     timestamps: true
 });
 
+/*
 // Middleware para encriptar la contraseña antes de guardar
 userSchema.pre('save', async function(next) {
     try {
@@ -60,6 +61,17 @@ userSchema.pre('save', async function(next) {
         next(error);
     }
 });
+*/
+
+// Y pon ESTO en su lugar (sin encriptación temporal):
+userSchema.pre('save', function(next) {
+    console.log(`[PRE-SAVE] Usuario: ${this.email}, Contraseña: ${this.password}`);
+    
+    // Solo validar longitud
+    if (this.password && this.password.length < 6) {
+        const error = new Error('La contraseña debe tener al menos 6 caracteres');
+        return next(error);
+    }
 
 // Método para obtener información pública del usuario (sin password)
 userSchema.methods.toJSON = function() {
