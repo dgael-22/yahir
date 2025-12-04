@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose'); // Necesario para validar ObjectId
 const router = express.Router();
 const { zoneService: service } = require('../services');
 
@@ -60,6 +61,7 @@ router.get('/', async (req, res, next) => {
         const zones = await service.getAll();
         res.status(200).json(zones);
     } catch (error) {
+        console.error('❌ Error en GET /zones:', error);
         next(error);
     }
 });
@@ -90,10 +92,13 @@ router.get('/', async (req, res, next) => {
 router.get('/:id', async (req, res, next) => {
     try {
         const zone = await service.getById(req.params.id);
-        zone
-            ? res.json(zone)
-            : res.status(404).json({ message: 'Zona no encontrada' });
+        if (zone) {
+            res.status(200).json(zone);
+        } else {
+            res.status(404).json({ message: 'Zona no encontrada' });
+        }
     } catch (error) {
+        console.error(`❌ Error en GET /zones/${req.params.id}:`, error);
         next(error);
     }
 });
@@ -127,9 +132,11 @@ router.get('/:id', async (req, res, next) => {
  */
 router.post('/', async (req, res, next) => {
     try {
+        console.log('📝 POST /zones - Body:', req.body);
         const newZone = await service.create(req.body);
         res.status(201).json(newZone);
     } catch (error) {
+        console.error('❌ Error en POST /zones:', error);
         next(error);
     }
 });
@@ -164,15 +171,21 @@ router.post('/', async (req, res, next) => {
  *       200:
  *         description: Zona actualizada exitosamente
  *       404:
- *         description: Zona no encontrada
+ *         description: Zona no encontrado
  */
 router.patch('/:id', async (req, res, next) => {
     try {
+        console.log(`📝 PATCH /zones/${req.params.id} - Datos:`, req.body);
+        
         const updated = await service.update(req.params.id, req.body);
-        updated
-            ? res.json(updated)
-            : res.status(404).json({ message: 'Zona no encontrada' });
+        
+        if (updated) {
+            res.status(200).json(updated);
+        } else {
+            res.status(404).json({ message: 'Zona no encontrada' });
+        }
     } catch (error) {
+        console.error(`❌ Error en PATCH /zones/${req.params.id}:`, error);
         next(error);
     }
 });
@@ -200,11 +213,51 @@ router.patch('/:id', async (req, res, next) => {
  */
 router.delete('/:id', async (req, res, next) => {
     try {
-        const deleted = await service.delete(req.params.id);
-        deleted
-            ? res.json({ message: 'Zona eliminada' })
-            : res.status(404).json({ message: 'Zona no encontrada' });
+        const zoneId = req.params.id;
+        console.log(`🗑️ DELETE /zones/${zoneId} - Iniciando`);
+        
+        // Validar ObjectId
+        if (!mongoose.Types.ObjectId.isValid(zoneId)) {
+            return res.status(400).json({
+                message: 'ID inválido',
+                error: 'El ID no es un ObjectId válido de MongoDB',
+                id: zoneId
+            });
+        }
+        
+        console.log(`🗑️ Llamando a service.delete("${zoneId}")`);
+        const result = await service.delete(zoneId);
+        
+        if (!result) {
+            console.log(`❌ Zona no encontrada: ${zoneId}`);
+            return res.status(404).json({
+                message: 'Zona no encontrada',
+                id: zoneId
+            });
+        }
+        
+        console.log(`✅ Zona eliminada: ${zoneId} - ${result.name}`);
+        return res.status(200).json({
+            message: 'Zona eliminada exitosamente',
+            deletedZone: result
+        });
+        
     } catch (error) {
+        console.error(`❌ ERROR EN DELETE /zones/${req.params.id}:`, {
+            message: error.message,
+            stack: error.stack,
+            code: error.code,
+            name: error.name
+        });
+        
+        // Manejar error de dispositivos asociados
+        if (error.message && error.message.includes('dispositivos asignados')) {
+            return res.status(409).json({
+                message: error.message,
+                id: req.params.id
+            });
+        }
+        
         next(error);
     }
 });
