@@ -3,7 +3,6 @@ router.patch('/:id', async (req, res, next) => {
         const deviceId = req.params.id;
         console.log(`PATCH /devices/${deviceId} - Iniciando`);
         
-        // 1. Validar ObjectId del dispositivo
         if (!mongoose.Types.ObjectId.isValid(deviceId)) {
             console.log(`ID inválido: ${deviceId}`);
             return res.status(400).json({
@@ -15,7 +14,6 @@ router.patch('/:id', async (req, res, next) => {
         
         console.log(`Body recibido:`, JSON.stringify(req.body, null, 2));
         
-        // 2. Validar ObjectIds en el body si se envían
         if (req.body.ownerId && !mongoose.Types.ObjectId.isValid(req.body.ownerId)) {
             console.log(`ownerId inválido: ${req.body.ownerId}`);
             return res.status(400).json({
@@ -34,7 +32,6 @@ router.patch('/:id', async (req, res, next) => {
             });
         }
         
-        // 3. Validar sensores si es array
         if (req.body.sensors && Array.isArray(req.body.sensors)) {
             const invalidSensors = req.body.sensors.filter(sensorId => 
                 sensorId && sensorId !== "string" && !mongoose.Types.ObjectId.isValid(sensorId)
@@ -73,7 +70,6 @@ router.patch('/:id', async (req, res, next) => {
             body: req.body
         });
         
-        // Manejar errores específicos
         if (error.code === 11000) {
             return res.status(409).json({
                 message: 'El número de serie ya está registrado',
