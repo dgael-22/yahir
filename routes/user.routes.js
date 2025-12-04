@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose'); // Necesario para validar ObjectId
 const router = express.Router();
 const { userService: service } = require('../services');
 
@@ -68,6 +69,7 @@ router.get('/', async (req, res, next) => {
         const users = await service.getAll();
         res.status(200).json(users);
     } catch (error) {
+        console.error('❌ Error en GET /users:', error);
         next(error);
     }
 });
@@ -104,6 +106,7 @@ router.get('/:id', async (req, res, next) => {
             res.status(404).json({ message: 'Usuario no encontrado' });
         }
     } catch (error) {
+        console.error(`❌ Error en GET /users/${req.params.id}:`, error);
         next(error);
     }
 });
@@ -157,27 +160,71 @@ router.get('/:id', async (req, res, next) => {
  */
 router.post('/', async (req, res, next) => {
     try {
-        const newUser = await service.create(req.body);
-        res.status(201).json(newUser);
-    } catch (error) {
-        console.error('Error en POST /users:', error); 
+        console.log('📝 POST /users - Body recibido:', req.body);
         
+        // Validación básica antes de llamar al servicio
+        const { name, email, password, role } = req.body;
+        
+        if (!name || !email || !password || !role) {
+            return res.status(400).json({
+                message: 'Faltan campos requeridos',
+                required: ['name', 'email', 'password', 'role'],
+                received: { name: !!name, email: !!email, password: !!password, role: !!role }
+            });
+        }
+        
+        if (password.length < 6) {
+            return res.status(400).json({
+                message: 'La contraseña debe tener al menos 6 caracteres',
+                field: 'password',
+                length: password.length
+            });
+        }
+        
+        console.log('📝 Llamando a service.create()...');
+        const newUser = await service.create(req.body);
+        
+        console.log('✅ Usuario creado exitosamente:', newUser._id);
+        res.status(201).json(newUser);
+        
+    } catch (error) {
+        console.error('❌ ERROR EN POST /users:', {
+            message: error.message,
+            code: error.code,
+            name: error.name,
+            stack: error.stack // <-- ESTO ES CRÍTICO
+        });
+        
+        // 1. Error de duplicado (email único)
         if (error.code === 11000 || error.name === 'MongoServerError') {
             return res.status(409).json({
                 message: 'El email ya está registrado',
-                error: error.message
+                error: error.message,
+                field: 'email'
             });
         }
         
-        // Manejar error de validación
+        // 2. Error de validación de Mongoose
         if (error.name === 'ValidationError') {
+            const errors = {};
+            for (let field in error.errors) {
+                errors[field] = error.errors[field].message;
+            }
             return res.status(400).json({
                 message: 'Error de validación',
-                error: error.message,
-                details: error.errors
+                errors: errors
             });
         }
         
+        // 3. Error de bcrypt (contraseña)
+        if (error.message && error.message.includes('bcrypt')) {
+            return res.status(500).json({
+                message: 'Error al procesar la contraseña',
+                error: 'Error interno de encriptación'
+            });
+        }
+        
+        // 4. Pasar al siguiente middleware
         next(error);
     }
 });
@@ -231,13 +278,35 @@ router.post('/', async (req, res, next) => {
  */
 router.patch('/:id', async (req, res, next) => {
     try {
+        console.log(`📝 PATCH /users/${req.params.id} - Datos:`, req.body);
+        
         const updated = await service.update(req.params.id, req.body);
+        
         if (updated) {
             res.status(200).json(updated);
         } else {
             res.status(404).json({ message: 'Usuario no encontrado' });
         }
     } catch (error) {
+        console.error(`❌ ERROR EN PATCH /users/${req.params.id}:`, error);
+        
+        // Manejar error de duplicado
+        if (error.code === 11000 || error.name === 'MongoServerError') {
+            return res.status(409).json({
+                message: 'El email ya está registrado por otro usuario',
+                error: error.message
+            });
+        }
+        
+        // Manejar error de validación
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({
+                message: 'Error de validación',
+                error: error.message,
+                details: error.errors
+            });
+        }
+        
         next(error);
     }
 });
@@ -273,23 +342,79 @@ router.patch('/:id', async (req, res, next) => {
  */
 router.delete('/:id', async (req, res, next) => {
     try {
-        const result = await service.delete(req.params.id);
+        const userId = req.params.id;
+        console.log(`🗑️ DELETE /users/${userId} - Iniciando`);
         
-        if (result === null || result === undefined) {
-            res.status(404).json({ message: 'Usuario no encontrado' });
-        } else {
-            res.status(200).json({ 
-                message: 'Usuario eliminado exitosamente',
-                deletedUser: result 
+        // Validar ObjectId (igual que Sensor)
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({
+                message: 'ID inválido',
+                error: 'El ID proporcionado no es un ObjectId válido de MongoDB',
+                id: userId
             });
         }
-    } catch (error) {
-        // Manejo específico para error 409 u otros
-        if (error.message.includes('dispositivos asignados') || error.code === 'CONFLICT') {
-            res.status(409).json({ message: error.message });
-        } else {
-            next(error);
+        
+        console.log(`🗑️ Llamando a service.delete("${userId}")`);
+        const result = await service.delete(userId);
+        
+        if (!result) {
+            console.log(`❌ Usuario no encontrado: ${userId}`);
+            return res.status(404).json({
+                message: 'Usuario no encontrado',
+                id: userId
+            });
         }
+        
+        console.log(`✅ Usuario eliminado: ${userId}`);
+        return res.status(200).json({
+            message: 'Usuario eliminado exitosamente',
+            deletedUser: result
+        });
+        
+    } catch (error) {
+        console.error(`❌ ERROR EN DELETE /users/${req.params.id}:`, {
+            message: error.message,
+            stack: error.stack, // <-- IMPORTANTE PARA DIAGNÓSTICO
+            code: error.code,
+            name: error.name
+        });
+        
+        // 1. Error de dispositivos asociados
+        if (error.message && error.message.includes('dispositivos asignados')) {
+            return res.status(409).json({
+                message: error.message,
+                id: req.params.id
+            });
+        }
+        
+        // 2. Error de CastError (ObjectId inválido)
+        if (error.name === 'CastError') {
+            return res.status(400).json({
+                message: 'ID inválido',
+                error: 'Formato de ID incorrecto para MongoDB ObjectId',
+                id: req.params.id
+            });
+        }
+        
+        // 3. Error de validación
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({
+                message: 'Error de validación',
+                error: error.message,
+                details: error.errors
+            });
+        }
+        
+        // 4. Error de referencia (si Device no existe)
+        if (error.message && error.message.includes('Device')) {
+            return res.status(500).json({
+                message: 'Error de configuración del sistema',
+                error: 'Modelo Device no disponible'
+            });
+        }
+        
+        // 5. Pasar al siguiente middleware
+        next(error);
     }
 });
 
