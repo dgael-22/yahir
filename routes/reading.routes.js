@@ -83,7 +83,7 @@ router.get('/', async (req, res, next) => {
  *         description: ID de la lectura
  *     responses:
  *       200:
- *         description: Lectura encontrado
+ *         description: Lectura encontrada
  *         content:
  *           application/json:
  *             schema:
@@ -197,7 +197,6 @@ router.post('/', async (req, res, next) => {
  */
 router.patch('/:id', async (req, res, next) => {
     try {
-        // No permitir cambiar sensorId en una lectura existente
         if (req.body.sensorId) {
             return res.status(422).json({ 
                 message: 'No se puede cambiar el sensor asociado a una lectura existente' 
