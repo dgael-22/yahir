@@ -30,7 +30,6 @@ const sensorSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Pre-hook para evitar eliminación si el sensor tiene lecturas
 sensorSchema.pre('findOneAndDelete', async function(next) {const sensorId = this.getQuery()._id;const Reading = mongoose.model('Reading');        console.log(`[PRE-HOOK] Verificando lecturas para sensor: ${sensorId}`);try {const readingCount = await Reading.countDocuments({ sensorId: sensorId });if (readingCount > 0) {            console.log(`[PRE-HOOK] Sensor tiene ${readingCount} lecturas, bloqueando eliminación`);return next(new Error(`No se puede eliminar el sensor porque tiene ${readingCount} lecturas registradas`));}                console.log(`[PRE-HOOK] Sensor OK para eliminar`);next();} catch (error) {        console.error(`[PRE-HOOK] Error:`, error);next(error);}});
  
 module.exports = mongoose.model('Sensor', sensorSchema);
