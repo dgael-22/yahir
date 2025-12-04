@@ -5,25 +5,23 @@ class ReadingService {
         try {
             console.log('ReadingService.create - Datos:', data);
             
-            // Validar que sensorId sea ObjectId válido
-            if (!data.sensorId || !data.sensorId.match(/^[0-9a-fA-F]{24}$/)) {
-                throw new Error('sensorId debe ser un ObjectId válido');
-            }
-            
             const reading = new Reading({
                 sensorId: data.sensorId,
                 value: data.value,
                 time: data.time || new Date()
             });
             
-            console.log('ReadingService.create - Guardando...');
             const savedReading = await reading.save();
+            console.log('Reading creado:', savedReading._id);
             
-            console.log('ReadingService.create - Éxito:', savedReading._id);
-            return savedReading;
+            // Populate después de guardar
+            const populated = await Reading.findById(savedReading._id)
+                .populate('sensorId', 'type unit model');
+            
+            return populated;
             
         } catch (error) {
-            console.error('ERROR EN ReadingService.create:', error.message, error.stack);
+            console.error('ERROR EN ReadingService.create:', error.message);
             throw error;
         }
     }
@@ -67,11 +65,15 @@ class ReadingService {
 
     async delete(id) {
         try {
-            const reading = await Reading.findById(id);
-            if (!reading) return null;
-
-            await Reading.deleteOne({ _id: id });
-            return { id: reading._id, sensorId: reading.sensorId, time: reading.time };
+            const deleted = await Reading.findByIdAndDelete(id);
+            
+            if (!deleted) return null;
+            
+            return { 
+                id: deleted._id, 
+                sensorId: deleted.sensorId, 
+                time: deleted.time 
+            };
         } catch (error) {
             console.error('ERROR EN ReadingService.delete:', error);
             throw error;
